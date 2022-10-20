@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="fa">
+  
+<head>
+    <title>
+        ددودووم
+    </title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dom-to-image/2.6.0/dom-to-image.min.js" integrity="sha512-01CJ9/g7e8cUmY0DFTMcUw/ikS799FHiOA0eyHsUWfOetgbx/t6oV4otQ5zXKQyIrQGTHSmRVPIgrgLcZi/WMA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link href="styles.css" rel="stylesheet">
+</head>
+  
+<body>
+    <label>
+        عنوان
+        <input type="text" id="title" />
+    </label>
+    <label>
+        متن (هر مصرع در یک خط)
+        <textarea id="content"></textarea>
+    </label>
+    <label>
+        تعداد ابیات در هر صفحه (نمونه: 2-1-2)
+        <input type="text" dir="ltr" id="number-of-couplets-per-page" />
+    </label>
+    <div id="images"></div>
+    <button onclick="createImages()">
+        ایجاد تصاویر
+    </button>
+    <div id="output"></div>
+  
+    <script type="text/javascript">
+        function generate() {
+            const title = document.getElementById("title").value;
+            const content = document.getElementById("content").value;
+            const numberOfCoupletsPerPage = document.getElementById("number-of-couplets-per-page").value.split('-').map(n => parseInt(n));
+            const numberOfCouplets = numberOfCoupletsPerPage.reduce((previousValue, currentValue) => previousValue + currentValue, 0);
+            const lines = content.split('\n').map(line => line.trim());
+            console.log(lines)
+            const nonEmptyLines = lines.filter(line => line);
+            document.getElementById("content").value = lines.join("\n");
+            console.log(numberOfCouplets, nonEmptyLines.length / 2)
+            if (numberOfCouplets !== (nonEmptyLines.length / 2)) {
+                alert("تعداد ابیات با متن هم‌خوانی ندارد!");
+                return;
+            }
+            const invalidNumberOfCoupletsPerPage = numberOfCoupletsPerPage.filter(n => ![1, 2, 3].includes(n));
+            if (invalidNumberOfCoupletsPerPage.length > 0) {
+                alert("تعداد ابیات در هر صفحه باید حداقل ۱ و حداکثر ۳ باشد!");
+                return;
+            }
+
+            let numberOfCoupletsPerPageIndex = 0;
+            let lineIndex = 0;
+            const imagesElement = document.getElementById("images");
+            imagesElement.innerHTML = "";
+            while (numberOfCoupletsPerPageIndex < numberOfCoupletsPerPage.length) {
+                let contentToWrite = "";
+
+                for (let i = lineIndex; i < lineIndex + numberOfCoupletsPerPage[numberOfCoupletsPerPageIndex] * 2; i += 1) {
+                    console.log(i, nonEmptyLines[i])
+                    if ((i - lineIndex) % 2 === 0 && i !== lineIndex) {
+                        contentToWrite += "\n";
+                    }
+                    contentToWrite += `${nonEmptyLines[i]}\n`;
+                }
+                lineIndex += numberOfCoupletsPerPage[numberOfCoupletsPerPageIndex] * 2;
+                contentToWrite = contentToWrite.trim();           
+                numberOfCoupletsPerPageIndex += 1;
+                const newImage = document.createElement("div");
+                newImage.innerText = contentToWrite;
+                imagesElement.appendChild(newImage);
+                const backgroundImage = document.createElement("img");
+                backgroundImage.src = "./images/content-background.png";
+                imagesElement.appendChild(backgroundImage)
+            }
+        }
+
+        function createImages() {
+            generate();
+            let imagesElements =
+                document.querySelectorAll('#images > div');
+  
+            const resultElements = new Array(imagesElements.length).fill(null);
+            document.getElementById("output").innerHTML = "";
+            imagesElements.forEach((image, imageIndex) => {
+                domtoimage.toPng(image, { width: 1500, height: 1500, style: {
+                    "margin-bottom": "10px",
+                    "color": "white",
+                    "display": "flex",
+                    "justify-content": "center",
+                    "align-items": "center",
+                    "text-align": "center",
+                    "font-size": "65px",
+                }})
+                    .then(function (dataUrl) {
+                        var img = new Image();
+                        img.src = dataUrl;
+                        resultElements[imageIndex] = img;
+                        console.log(resultElements);
+                        const allImagesAreGenerated = !resultElements.some(element => element === null);
+                        console.log(allImagesAreGenerated);
+                        if (allImagesAreGenerated) {
+                            resultElements.forEach(element => {
+                                document.getElementById("output").appendChild(element);
+                            });
+                        }
+                    })
+                    .catch(function (error) {
+                        console.error('Oops, something went wrong!', error);
+                    });
+            })
+        }
+    </script>
+</body>
+  
+</html>
